@@ -10,14 +10,11 @@ import Foundation
 
 class APIManager {
     static let shared = APIManager()
-    
+   private let timeStampKey = "TimeStamp"
    private let cacheKey = "KEXPIREDATE"
    private let expiration : Double = -900
     
     func fetchData(completionHandler: @escaping (NetworkResult) -> Void) {
-        
-//        guard let link = URL(string:APIService.listing.url) else {return}
-        
         
         self.makeAPICall(urlString: APIService.listing.url) { (data, response) in
             if let statusCode = response?.statusCode,
@@ -29,36 +26,11 @@ class APIManager {
                             completionHandler(NetworkResult.success(obj.data))
                         }
                     }
-                case HTTPStatusCodes.tooManyRequests:
-                    completionHandler(NetworkResult.failure(statusCode: HTTPStatusCodes.tooManyRequests, title: "429", subTitle: "Too many requests"))
-                case HTTPStatusCodes.notFound:
-                    completionHandler(NetworkResult.failure(statusCode: HTTPStatusCodes.notFound, title: "404", subTitle: "Not Found"))
-                case HTTPStatusCodes.unAvailable:
-                    completionHandler(NetworkResult.failure(statusCode: HTTPStatusCodes.unAvailable, title: "503", subTitle: "Un Available"))
+                case HTTPStatusCodes.badrequest:
+                    completionHandler(NetworkResult.failure(statusCode: HTTPStatusCodes.badrequest, title: HTTPError.errorCode.rawValue, subTitle: HTTPError.errorMessage.rawValue))
                 }
             }
-        
-        
-//        URLSession.shared.dataTask(with: link) { (data, response, error) in
-//            if let statusCode = (response as? HTTPURLResponse)?.statusCode,
-//                let httpStatusCode = HTTPStatusCodes(rawValue: statusCode) {
-//                switch httpStatusCode {
-//                case HTTPStatusCodes.success:
-//                    if let d = data, let obj = try? JSONDecoder().decode(ListingModel.self, from: d) {
-//                        if obj.success {
-//                          completionHandler(NetworkResult.success(obj.data))
-//                        }
-//                    }
-//                case HTTPStatusCodes.tooManyRequests:
-//                    completionHandler(NetworkResult.failure(statusCode: HTTPStatusCodes.tooManyRequests, title: "429", subTitle: "Too many requests"))
-//                case HTTPStatusCodes.notFound:
-//                    completionHandler(NetworkResult.failure(statusCode: HTTPStatusCodes.notFound, title: "404", subTitle: "Not Found"))
-//                case HTTPStatusCodes.unAvailable:
-//                    completionHandler(NetworkResult.failure(statusCode: HTTPStatusCodes.unAvailable, title: "503", subTitle: "Un Available"))
-//                }
-//            }
-//        }.resume()
-    }
+        }
     }
     
     func fetchDetail(id: String, completionHandler: @escaping (NetworkResult) -> Void) {
@@ -73,43 +45,17 @@ class APIManager {
                             completionHandler(NetworkResult.successDetail(obj))
                         }
                     }
-                case HTTPStatusCodes.tooManyRequests:
-                    completionHandler(NetworkResult.failure(statusCode: HTTPStatusCodes.tooManyRequests, title: "429", subTitle: "Too many requests"))
-                case HTTPStatusCodes.notFound:
-                    completionHandler(NetworkResult.failure(statusCode: HTTPStatusCodes.notFound, title: "404", subTitle: "Not Found"))
-                case HTTPStatusCodes.unAvailable:
-                    completionHandler(NetworkResult.failure(statusCode: HTTPStatusCodes.unAvailable, title: "503", subTitle: "Un Available"))
+                case HTTPStatusCodes.badrequest:
+                    completionHandler(NetworkResult.failure(statusCode: HTTPStatusCodes.badrequest, title: HTTPError.errorCode.rawValue, subTitle: HTTPError.errorMessage.rawValue))
                 }
             }
         }
     }
-    
-        
-//        URLSession.shared.dataTask(with: link) { (data, response, error) in
-//            if let statusCode = (response as? HTTPURLResponse)?.statusCode,
-//                let httpStatusCode = HTTPStatusCodes(rawValue: statusCode) {
-//                switch httpStatusCode {
-//                case HTTPStatusCodes.success:
-//                    if let d = data, let obj = try? JSONDecoder().decode(ContentDetail.self, from: d) {
-//                        if obj.success {
-//                            completionHandler(NetworkResult.successDetail(obj))
-//                        }
-//                    }
-//                case HTTPStatusCodes.tooManyRequests:
-//                    completionHandler(NetworkResult.failure(statusCode: HTTPStatusCodes.tooManyRequests, title: "429", subTitle: "Too many requests"))
-//                case HTTPStatusCodes.notFound:
-//                    completionHandler(NetworkResult.failure(statusCode: HTTPStatusCodes.notFound, title: "404", subTitle: "Not Found"))
-//                case HTTPStatusCodes.unAvailable:
-//                    completionHandler(NetworkResult.failure(statusCode: HTTPStatusCodes.unAvailable, title: "503", subTitle: "Un Available"))
-//                }
-//            }
-//        }.resume()
-    
 }
 
 extension APIManager {
         
-    func makeAPICall(urlString:String, completion:@escaping ((Any?,HTTPURLResponse?)->Void))   {
+   private func makeAPICall(urlString:String, completion:@escaping ((Any?,HTTPURLResponse?)->Void))   {
         
         guard let url = URL(string: urlString) else {
             completion(nil, nil)
@@ -123,15 +69,12 @@ extension APIManager {
         
     }
     
-    func makeAPICallWithRequest(request:URLRequest, completion:@escaping ((Any?,HTTPURLResponse?)->Void))
+   private func makeAPICallWithRequest(request:URLRequest, completion:@escaping ((Any?,HTTPURLResponse?)->Void))
     {
         self.checkCacheResponse(urlRequest: request) { (cachedResponse) in
             if let response = cachedResponse
             {
-//                let jsonDictionary = try? JSONSerialization.jsonObject(with: response.data, options: [])
-//                completion(jsonDictionary, response.response as? HTTPURLResponse)
                 completion(response.data, response.response as? HTTPURLResponse)
-
                 
                 DispatchQueue.global(qos: .background).async {
                     self.cacheTask(request)
@@ -142,8 +85,6 @@ extension APIManager {
                 self.cacheTask(request, completion: { (cachedResponse) in
                     if let response = cachedResponse
                     {
-//                        let jsonDictionary = try? JSONSerialization.jsonObject(with: response.data, options: [])
-//                        completion(jsonDictionary, response.response as? HTTPURLResponse)
                         completion(response.data, response.response as? HTTPURLResponse)
                     }
                     else
@@ -155,7 +96,7 @@ extension APIManager {
         }
     }
     
-    func checkCacheResponse(urlRequest:URLRequest, completion:@escaping ((CachedURLResponse?)->Void))
+  private func checkCacheResponse(urlRequest:URLRequest, completion:@escaping ((CachedURLResponse?)->Void))
     {
         if let cacheResponse = URLCache.shared.cachedResponse(for: urlRequest), let userInfo = cacheResponse.userInfo,let cachedDate = userInfo[cacheKey] as? Date, cachedDate.timeIntervalSinceNow > expiration
         {
@@ -174,7 +115,7 @@ extension APIManager {
         }
     }
        
-    func cacheTask(_ request: URLRequest, completion: ((CachedURLResponse?)->Void)? = nil) {
+   private func cacheTask(_ request: URLRequest, completion: ((CachedURLResponse?)->Void)? = nil) {
         
         URLSession.shared.dataTask(with: request) { (data, response, error) -> Void in
             DispatchQueue.main.async {
@@ -217,6 +158,28 @@ extension APIManager {
         }
     }
     
+    func saveTimeStamp(timeStamp: String) {
+        UserDefaults.standard.set(timeStamp, forKey: timeStampKey)
+        UserDefaults.standard.synchronize()
+    }
+    
+    func getLastTimeStamp() -> String {
+        if let time = UserDefaults.standard.value(forKey: timeStampKey) as? String {
+            return time
+        }
+        return ""
+    }
+    
+    func getTimeStamp() -> String {
+        var timeStamp = String(describing: Date().timeStamp ?? 0)
+        if !ReachabilityWrapper.shared.isNetworkAvailable() {
+            timeStamp = APIManager.shared.getLastTimeStamp()
+        } else {
+            APIManager.shared.saveTimeStamp(timeStamp: timeStamp)
+        }
+        print("timesssss\(timeStamp)")
+        return timeStamp
+    }
 }
 
 enum APIService {
@@ -226,7 +189,7 @@ enum APIService {
     
     var url : String {
         let baseURL = APIManagerConstant.baseUrl
-        let timeStamp = String(describing: Date().timeStamp ?? 0)        
+        let timeStamp = APIManager.shared.getTimeStamp()
         switch self {
         case .listing:
             return baseURL + APIEndPoint.listing + "?timestamp=\(timeStamp)"

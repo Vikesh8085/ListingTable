@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import Toast_Swift
 
 class ListViewModel {
     
@@ -23,7 +24,12 @@ class ListViewModel {
         APIManager.shared.fetchData { (result) in
             switch result {
             case let  .failure(_, title, subTitle):
-                print(title)
+                if let completion = self.completionHandler {
+                    completion(false,nil)
+                    DispatchQueue.main.async {
+                        self.showError(title: title, message: subTitle)
+                    }
+                }
             case let .success(photo):
                 self.listArray = photo
                 if let completion = self.completionHandler {
@@ -33,5 +39,19 @@ class ListViewModel {
                 print(detail)
             }
         }
+        
+        if !ReachabilityWrapper.shared.isNetworkAvailable() {
+            self.showToast(InternetAvailability.message.rawValue)
+        }
     }
+    
+    func showToast(_ message: String) {
+        self.listViewController?.tableView.makeToast(message)
+    }
+    
+    private func showError(title:String, message: String) {
+         self.listViewController?.showAlert(title: title, message: message, preferredStyle: .alert, alertActions: [(AlertAction.okAction.rawValue, .default)]) { (index) in
+         }
+     }
+     
 }

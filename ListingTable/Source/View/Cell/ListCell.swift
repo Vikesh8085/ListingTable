@@ -10,9 +10,11 @@ import UIKit
 
 class ListCell: UITableViewCell {
 
-    var content: Content! {
+    var content: Content? {
         didSet{
-            self.textLabel?.text = content.org.name + " - " + content.property.name + " - " + content.room.name
+            if let cont = content {
+                self.textLabel?.text = cont.org.name + " - " + cont.property.name + " - " + cont.room.name
+            }
         }
     }
     
