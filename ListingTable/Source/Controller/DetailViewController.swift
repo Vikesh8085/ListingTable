@@ -19,11 +19,15 @@ class DetailViewController: UIViewController, Storyboarded {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        setData()
+    }
+    
+    private func setData() {
         
         APIManager.shared.fetchDetail(id: String(content?.room.id ?? 0)){ (result) in
             switch result {
             case let  .failure(_, title, subTitle):
-                print(title)
+                self.showError(title: title, message: subTitle)
             case let .successDetail(content):
                 DispatchQueue.main.async {
                     self.lblMac.text = content.MAC
@@ -31,10 +35,14 @@ class DetailViewController: UIViewController, Storyboarded {
                     self.lblDescription.text = content.description
                 }
                 
-             case let .success(content):
+            case let .success(content):
                 print(content)
             }
         }
-        
+    }
+    
+    private func showError(title:String, message: String) {
+        self.showAlert(title: title, message: message, preferredStyle: .alert, alertActions: [(AlertAction.okAction.rawValue, .default)]) { (index) in
+        }
     }
 }

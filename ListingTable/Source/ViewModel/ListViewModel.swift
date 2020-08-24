@@ -46,7 +46,7 @@ class ListViewModel {
     }
     
     func showToast(_ message: String) {
-        self.listViewController?.tableView.makeToast(message)
+        self.listViewController?.view.makeToast(message, duration: 2.0, position: .top)
     }
     
     private func showError(title:String, message: String) {

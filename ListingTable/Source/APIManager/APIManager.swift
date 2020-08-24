@@ -61,7 +61,7 @@ extension APIManager {
             completion(nil, nil)
             return
         }
-        
+        print(url)
         var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 100)
         request.httpMethod = "GET"
         
